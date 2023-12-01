@@ -50,7 +50,7 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
         renderer.shadowMap.enable = true;
         const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 100);
-        camera.position.set(5, 2.5, 5);
+        camera.position.set(4, 2, 4);
         camera.lookAt(0, 0, 0);
         const controls = new OrbitControls(camera, canvas);
         controls.target.set(0, 0, 0);
@@ -107,12 +107,12 @@
               }
             });
             root.castShadow = true;
+            makeCorner();
             scene.add(root);
             models.push(root);
           });
         }
         //添加顶部五角星
-        let top = makeCorner();
         function makeCorner() {
           const top_corner_geo = new THREE.ConeGeometry(0.5, 1, 4);
           top_corner_geo.applyMatrix4(
@@ -136,18 +136,6 @@
           top.scale.set(0.1, 0.1, 0.1);
           scene.add(top);
           models.push(top);
-          return top;
-        }
-        {
-          const skyColor = 0xb1e1ff;
-          const groundColor = 0xb97a20;
-          const intensity = 1;
-          const light = new THREE.HemisphereLight(
-            skyColor,
-            groundColor,
-            intensity
-          );
-          scene.add(light);
         }
         {
           const color = 0xffffff;
@@ -181,7 +169,7 @@
         let particles = [];
         {
           let fallSpeen = 0.04;
-          let amount = 20000;
+          let amount = 10000;
           const loader = new THREE.TextureLoader();
           const texture = loader.load("./resources/images/ice.jpeg");
           let sprite_m = new THREE.SpriteMaterial({ map: texture });
