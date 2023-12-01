@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merry Christmas</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./build/three.module.js",
+          "three/addons/": "./jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <div class="text-wrap">
+      <div class="text">Merry Christmas</div>
+    </div>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      varying vec2 vUv;
+      void main(){
+        vUv = uv;
+        gl_Position = projectionMatrix  * modelViewMatrix  * vec4(position,1.0);
+      }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      uniform sampler2D baseTexture;
+      uniform sampler2D bloomTexture;
+
+      varying vec2 vUv;
+        void main() {
+
+          gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+
+        }
+    </script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+      import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+      import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+      import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+      import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+      import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+      import { FontLoader } from "three/addons/loaders/FontLoader.js";
+      import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+      function main() {
+        const canvas = document.querySelector("#canvas");
+        const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+        renderer.shadowMap.enable = true;
+        const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 100);
+        camera.position.set(5, 2.5, 5);
+        camera.lookAt(0, 0, 0);
+        const controls = new OrbitControls(camera, canvas);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color("black");
+
+        let plane = {};
+        plane = makePlane();
+        function makePlane() {
+          const planeSize = 40;
+
+          const loader = new THREE.TextureLoader();
+          const texture = loader.load("./resources/images/ice.jpeg");
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          texture.mapFilter = THREE.NearestFilter;
+          const repeats = planeSize / 2;
+          texture.repeat.set(repeats, repeats);
+
+          const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
+          const planeMat = new THREE.MeshPhongMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+          });
+          const mesh = new THREE.Mesh(planeGeo, planeMat);
+          mesh.receiveShadow = true;
+          mesh.rotation.x = Math.PI * -0.5;
+          mesh.position.y = -0.03;
+          scene.add(mesh);
+
+          return mesh;
+        }
+        let models = [];
+        {
+          const gltfLoader = new GLTFLoader();
+          const url = "./resources/source/model.gltf";
+          gltfLoader.load(url, (gltf) => {
+            const root = gltf.scene;
+            root.traverse((v) => {
+              if (v.isMesh && v.material) {
+                const { name, color, map } = v.material;
+                v.material = new THREE.MeshLambertMaterial({
+                  map,
+                  transparent: true,
+                  color,
+                  name,
+                });
+                if (v.name.includes("sphere")) {
+                  v.layers.enable(1);
+                }
+              }
+            });
+            root.castShadow = true;
+            scene.add(root);
+            models.push(root);
+          });
+        }
+        //添加顶部五角星
+        let top = makeCorner();
+        function makeCorner() {
+          const top_corner_geo = new THREE.ConeGeometry(0.5, 1, 4);
+          top_corner_geo.applyMatrix4(
+            new THREE.Matrix4().makeTranslation(0, 0.5, 0)
+          );
+          const top_m = new THREE.MeshStandardMaterial({
+            color: "rgb(255,215,0)",
+            roughness: 0.5,
+            metalness: 0.5,
+          });
+
+          const top_corner = new THREE.Mesh(top_corner_geo, top_m);
+          top_corner.layers.enable(1);
+          const top = new THREE.Group();
+          for (let i = 0; i < 5; i++) {
+            const geo = top_corner.clone();
+            geo.rotation.set((i * 2 * Math.PI) / 5, 0, 0);
+            top.add(geo);
+          }
+          top.position.y = 1.42;
+          top.scale.set(0.1, 0.1, 0.1);
+          scene.add(top);
+          models.push(top);
+          return top;
+        }
+        {
+          const skyColor = 0xb1e1ff;
+          const groundColor = 0xb97a20;
+          const intensity = 1;
+          const light = new THREE.HemisphereLight(
+            skyColor,
+            groundColor,
+            intensity
+          );
+          scene.add(light);
+        }
+        {
+          const color = 0xffffff;
+          const intensity = 2.5;
+          const light = new THREE.DirectionalLight(color, intensity);
+          light.position.set(0, 10, 0);
+          light.target.position.set(0, 0, 0);
+          scene.add(light);
+          scene.add(light.target);
+        }
+
+        function resizeRendererToDisplaySize(renderer) {
+          const canvas = renderer.domElement;
+          const width = canvas.clientWidth;
+          const height = canvas.clientHeight;
+          const needResize = canvas.width !== width || canvas.height !== height;
+          if (needResize) {
+            bloomComposer.setSize(width, height);
+            finalComposer.setSize(width, height);
+            renderer.setSize(width, height, false);
+          }
+
+          return needResize;
+        }
+        function randomRange(min, max) {
+          return (
+            Math.random() * (Math.abs(min) + Math.abs(max)) - Math.abs(min)
+          );
+        }
+        //加载雪花
+        let particles = [];
+        {
+          let fallSpeen = 0.04;
+          let amount = 20000;
+          const loader = new THREE.TextureLoader();
+          const texture = loader.load("./resources/images/ice.jpeg");
+          let sprite_m = new THREE.SpriteMaterial({ map: texture });
+          for (let i = 0; i < amount; i++) {
+            let particle = new THREE.Sprite(sprite_m);
+            //随机设定雪花的定位
+            particle.position.x = randomRange(-20, 20);
+            particle.position.y = randomRange(-5, 40);
+            particle.position.z = randomRange(-20, 20);
+            particle.scale.x = particle.scale.y = particle.scale.z = 0.05;
+            particle.v = new THREE.Vector3(0, -fallSpeen, 0);
+            particle.v.z = randomRange(-fallSpeen, fallSpeen);
+            particle.v.x = randomRange(-fallSpeen, fallSpeen);
+            particle.rotation.x = Math.PI / 2;
+            particles.push(particle);
+            scene.add(particle);
+          }
+        }
+        //使模型发光
+
+        //场景渲染器
+        const renderScene = new RenderPass(scene, camera);
+        //创建辉光效果
+        const bloomPass = new UnrealBloomPass(
+          new THREE.Vector2(window.innerWidth, window.innerHeight),
+          1,
+          0.4,
+          0.85
+        );
+        bloomPass.threshold = 0; //辉光强度
+        bloomPass.strength = 0.75; //辉光阈值
+        bloomPass.radius = 0; //辉光半径
+        const bloomComposer = new EffectComposer(renderer);
+
+        bloomComposer.renderToScreen = false;
+        bloomComposer.addPass(renderScene);
+        bloomComposer.addPass(bloomPass);
+
+        const finalPass = new ShaderPass(
+          new THREE.ShaderMaterial({
+            uniforms: {
+              baseTexture: { value: null },
+              bloomTexture: { value: bloomComposer.renderTarget2.texture },
+              tDiffuse: {
+                value: null,
+              },
+            },
+            vertexShader: document.getElementById("vertex-shader").textContent,
+            fragmentShader:
+              document.getElementById("fragment-shader").textContent,
+            defines: {},
+          }),
+          "baseTexture"
+        );
+
+        finalPass.neesSwap = true;
+        const finalComposer = new EffectComposer(renderer);
+        finalComposer.addPass(renderScene);
+        finalComposer.addPass(finalPass);
+        const BLOOM_SCENE = 1;
+        const bloomLayer = new THREE.Layers();
+        bloomLayer.set(BLOOM_SCENE);
+        const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
+        const materials = {};
+        function darkenNonBloomed(obj) {
+          if (obj instanceof THREE.Scene) {
+            materials.scene = obj.background;
+            obj.background = null;
+            return;
+          }
+          if (
+            obj instanceof THREE.Sprite ||
+            (obj.isMesh && bloomLayer.test(obj.layers) === false)
+          ) {
+            materials[obj.uuid] = obj.material;
+            obj.material = darkMaterial;
+          }
+        }
+        function restoreMaterial(obj) {
+          if (obj instanceof THREE.Scene) {
+            obj.background = materials.scene;
+            delete materials.background;
+            return;
+          }
+          if (materials[obj.uuid]) {
+            obj.material = materials[obj.uuid];
+            delete materials[obj.uuid];
+          }
+        }
+        function render(time) {
+          time *= 0.001;
+          if (resizeRendererToDisplaySize(renderer)) {
+            const canvas = renderer.domElement;
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+          }
+          particles.forEach((particle) => {
+            let pp = particle.position;
+            pp.add(particle.v);
+            if (pp.y < -5) pp.y = 40;
+            if (pp.x > 20) pp.y = -20;
+            else if (pp.x < -20) pp.x = 20;
+            if (pp.z > 20) pp.z = -20;
+            else if (pp.z < -20) pp.z = 20;
+          });
+          plane.rotation.z = time * 0.1;
+          models.forEach((geo) => {
+            geo.rotation.y = time * 0.1;
+          });
+          renderer.render(scene, camera);
+          scene.traverse(darkenNonBloomed);
+          bloomComposer.render();
+          scene.traverse(restoreMaterial);
+          finalComposer.render();
+          requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+      }
+      main();
+    </script>
+  </body>
+</html>
