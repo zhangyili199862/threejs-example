@@ -19,6 +19,9 @@
     <div class="text-wrap">
       <div class="text">Merry Christmas</div>
     </div>
+    <!-- <div id="loading-modal">
+      <div>加载中</div>
+    </div> -->
     <script id="vertex-shader" type="x-shader/x-vertex">
       varying vec2 vUv;
       void main(){
@@ -50,21 +53,22 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
         renderer.shadowMap.enable = true;
         const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 100);
-        camera.position.set(4, 2, 4);
+        camera.position.set(4, 3, -2);
         camera.lookAt(0, 0, 0);
         const controls = new OrbitControls(camera, canvas);
+        // controls.enableDamping = true;
         controls.target.set(0, 0, 0);
         controls.update();
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color("black");
-
+        const loader = new THREE.TextureLoader();
         let plane = {};
         plane = makePlane();
+
         function makePlane() {
           const planeSize = 40;
 
-          const loader = new THREE.TextureLoader();
           const texture = loader.load("./resources/images/ice.jpeg");
           texture.colorSpace = THREE.SRGBColorSpace;
           texture.wrapS = THREE.RepeatWrapping;
@@ -79,7 +83,6 @@
             side: THREE.DoubleSide,
           });
           const mesh = new THREE.Mesh(planeGeo, planeMat);
-          mesh.receiveShadow = true;
           mesh.rotation.x = Math.PI * -0.5;
           mesh.position.y = -0.03;
           scene.add(mesh);
@@ -139,12 +142,26 @@
         }
         {
           const color = 0xffffff;
-          const intensity = 2.5;
+          const intensity = 2;
           const light = new THREE.DirectionalLight(color, intensity);
-          light.position.set(0, 10, 0);
+          light.position.set(-2, 2, 2);
           light.target.position.set(0, 0, 0);
           scene.add(light);
           scene.add(light.target);
+        }
+        {
+          const color = 0xffffff;
+          const intensity = 2;
+          const light = new THREE.DirectionalLight(color, intensity);
+          light.position.set(2, -2, 2);
+          light.target.position.set(0, 0, 0);
+          scene.add(light);
+          scene.add(light.target);
+        }
+        {
+          const color = 0xffffff;
+          const light = new THREE.AmbientLight(color);
+          scene.add(light);
         }
 
         function resizeRendererToDisplaySize(renderer) {
@@ -170,7 +187,6 @@
         {
           let fallSpeen = 0.04;
           let amount = 10000;
-          const loader = new THREE.TextureLoader();
           const texture = loader.load("./resources/images/ice.jpeg");
           let sprite_m = new THREE.SpriteMaterial({ map: texture });
           for (let i = 0; i < amount; i++) {
@@ -199,9 +215,9 @@
           0.4,
           0.85
         );
-        bloomPass.threshold = 0; //辉光强度
-        bloomPass.strength = 0.75; //辉光阈值
-        bloomPass.radius = 0; //辉光半径
+        bloomPass.threshold = 0.6; //辉光强度
+        bloomPass.strength = 1; //辉光阈值
+        bloomPass.radius = 1; //辉光半径
         const bloomComposer = new EffectComposer(renderer);
 
         bloomComposer.renderToScreen = false;
@@ -275,10 +291,10 @@
             if (pp.z > 20) pp.z = -20;
             else if (pp.z < -20) pp.z = 20;
           });
-          plane.rotation.z = time * 0.1;
-          models.forEach((geo) => {
-            geo.rotation.y = time * 0.1;
-          });
+          // plane.rotation.z = time * 0.1;
+          // models.forEach((geo) => {
+          //   geo.rotation.y = time * 0.1;
+          // });
           renderer.render(scene, camera);
           scene.traverse(darkenNonBloomed);
           bloomComposer.render();
