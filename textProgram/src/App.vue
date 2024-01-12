@@ -24,14 +24,14 @@ const scene = new THREE.Scene();
  */
 const textureLoader = new THREE.TextureLoader();
 const matcapTexture = textureLoader.load(
-  "/textures/matcaps/8.png"
+  "/threejs-example/text/textures/matcaps/8.png"
 );
 /**
  * Fonts
  */
 const fontLoader = new FontLoader();
 fontLoader.load(
-  "/fonts/helvetiker_regular.typeface.json",
+  "/threejs-example/text/fonts/helvetiker_regular.typeface.json",
   (font) => {
     const textGeometry = new TextGeometry("Jesus love you", {
       font: font,
