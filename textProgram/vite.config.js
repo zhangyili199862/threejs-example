@@ -15,6 +15,6 @@ export default defineConfig({
     extensions: [".js", ".json", ".ts", ".vue", ".tsx"],
   },
   build: {
-    outDir: "../text",
+    emptyOutDir: "../text",
   },
 });
