@@ -111,7 +111,14 @@ window.addEventListener("resize", () => {
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
-
+// const cursor = {
+//   x: 0,
+//   y: 0,
+// };
+// window.addEventListener("mousemove", (event) => {
+//   cursor.x = event.clientX / sizes.width - 0.5;
+//   cursor.y = 0.5 - event.clientY / sizes.height;
+// });
 /**
  * Camera
  */
@@ -122,9 +129,9 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.x = 1;
+camera.position.x = -1;
 camera.position.y = 1;
-camera.position.z = 2;
+camera.position.z = 3;
 scene.add(camera);
 
 // Controls
@@ -146,11 +153,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const clock = new THREE.Clock();
 
 const tick = () => {
-  const elapsedTime = clock.getElapsedTime();
-
+  // const elapsedTime = clock.getElapsedTime();
+  // camera.position.x = Math.sin(cursor.x * Math.PI * 2) * 3;
+  // camera.position.z = Math.cos(cursor.x * Math.PI * 2) * 3;
+  // camera.position.y = cursor.y * 5;
   // Update controls
   controls.update();
-
+  // camera.updateMatrix();
   // Render
   renderer.render(scene, camera);
 
